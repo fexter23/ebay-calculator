@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eBay Resale & Profit Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        stDark: '#0e1117',
+                        stSidebar: '#262730',
+                        stCard: '#161b22',
+                        stBorder: '#30363d',
+                        stRed: '#ff4b4b',
+                        stGreen: '#00d26a',
+                        stBlue: '#3182ce',
+                        stYellow: '#f59e0b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0e1117;
+            color: #fafafa;
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0e1117; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row antialiased selection:bg-red-500 selection:text-white">
+
+    <!-- Sidebar Controls -->
+    <aside class="w-full md:w-80 lg:w-96 bg-stSidebar border-r border-stBorder p-6 flex flex-col shrink-0">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-stBorder">
+            <div class="p-2.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400">
+                <i class="fa-solid fa-calculator text-xl"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-white leading-tight">Resale Calculator</h1>
+                <p class="text-xs text-gray-400">Streamlit-Style Profit Hub</p>
+            </div>
+        </div>
+
+        <form id="calc-form" onsubmit="event.preventDefault();" class="space-y-5 flex-1">
+            <div class="text-xs uppercase tracking-wider font-semibold text-gray-400 mb-2">Transaction Inputs</div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="itemCost">Item Purchase Cost ($ CAD)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm">$</span>
+                    <input type="number" id="itemCost" value="80.00" step="0.01" min="0"
+                        class="w-full pl-7 pr-3 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="sellingPrice">Target Selling Price ($ CAD)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm">$</span>
+                    <input type="number" id="sellingPrice" value="95.00" step="0.01" min="0"
+                        class="w-full pl-7 pr-3 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="shippingCharged">Shipping Charged to Buyer ($ CAD)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm">$</span>
+                    <input type="number" id="shippingCharged" value="22.00" step="0.01" min="0"
+                        class="w-full pl-7 pr-3 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="actualShipping">Actual Shipping Label Cost ($ CAD)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm">$</span>
+                    <input type="number" id="actualShipping" value="22.00" step="0.01" min="0"
+                        class="w-full pl-7 pr-3 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="packageType">Package Type</label>
+                <div class="relative">
+                    <select id="packageType"
+                        class="w-full pl-3 pr-8 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors appearance-none cursor-pointer">
+                        <option value="0">None — $0.00</option>
+                        <option value="0.066">PWE — $0.066</option>
+                        <option value="0.67">Bubble Mailer — $0.67</option>
+                    </select>
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 pointer-events-none">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </span>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-1">Packaging cost added to out-of-pocket expenses</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="salesTaxPercent">Estimated Buyer Sales Tax (%)</label>
+                <div class="relative">
+                    <input type="number" id="salesTaxPercent" value="0.00" step="0.1" min="0" max="100"
+                        class="w-full pl-3 pr-8 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 text-sm">%</span>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-1">eBay charges FVF and ad rate on tax even though you never receive it</p>
+            </div>
+
+            <div class="text-xs uppercase tracking-wider font-semibold text-gray-400 pt-3 mb-2 border-t border-stBorder">Platform Fee Rates</div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="feePercent">eBay Fee Percentage (%)</label>
+                <div class="relative">
+                    <input type="number" id="feePercent" value="15.00" step="0.1" min="0" max="100"
+                        class="w-full pl-3 pr-8 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 text-sm">%</span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="adRatePercent">Ad Rate Percentage (%)</label>
+                <div class="relative">
+                    <input type="number" id="adRatePercent" value="0.00" step="0.1" min="0" max="100"
+                        class="w-full pl-3 pr-8 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 text-sm">%</span>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-1">Promoted Listings Standard — charged on item + shipping + tax, on top of FVF</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-300 mb-1.5" for="fixedFee">eBay Fixed Per-Order Fee ($ CAD)</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm">$</span>
+                    <input type="number" id="fixedFee" value="0.40" step="0.05" min="0"
+                        class="w-full pl-7 pr-3 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                </div>
+            </div>
+
+            <div class="pt-2">
+                <button type="button" onclick="loadBoxExample()" class="w-full text-xs bg-stDark hover:bg-stBorder text-gray-300 border border-stBorder py-2 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left text-gray-400"></i> Load Previous $80 Box Example
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-auto pt-6 border-t border-stBorder text-xs text-gray-500 text-center">
+            Designed for eBay Canada / USA Shipping
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-6 md:p-10 max-w-6xl overflow-y-auto space-y-8">
+
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-stBorder">
+            <div>
+                <div class="inline-flex items-center gap-2 text-xs font-mono text-red-400 bg-red-500/10 px-2.5 py-1 rounded-full border border-red-500/20 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
+                    Live Margin Engine
+                </div>
+                <h2 class="text-2xl font-bold text-white tracking-tight">eBay Resale Profit Analysis</h2>
+                <p class="text-sm text-gray-400">Instant breakdowns accounting for eBay's total-transaction fee structure (including tax and Promoted Listings ad rate).</p>
+            </div>
+
+            <div id="statusBadge" class="px-4 py-2.5 rounded-xl border flex items-center gap-3 font-semibold text-sm transition-all shadow-lg">
+                <i id="statusIcon" class="fa-solid text-base"></i>
+                <span id="statusText">Calculating...</span>
+            </div>
+        </header>
+
+        <!-- Primary Key Metrics -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-stCard border border-stBorder rounded-2xl p-5 flex flex-col justify-between shadow-md">
+                <div class="flex justify-between items-center text-xs text-gray-400 mb-2">
+                    <span>FINAL NET PROFIT</span>
+                    <i class="fa-solid fa-wallet text-gray-500"></i>
+                </div>
+                <div id="netProfitDisplay" class="text-3xl font-extrabold font-mono tracking-tight text-white my-1">$0.00</div>
+                <div id="netProfitSub" class="text-xs font-medium text-gray-400 flex items-center gap-1 mt-1"><span>--</span></div>
+            </div>
+
+            <div class="bg-stCard border border-stBorder rounded-2xl p-5 flex flex-col justify-between shadow-md">
+                <div class="flex justify-between items-center text-xs text-gray-400 mb-2">
+                    <span>RETURN ON INVESTMENT</span>
+                    <i class="fa-solid fa-chart-line text-gray-500"></i>
+                </div>
+                <div id="roiDisplay" class="text-3xl font-extrabold font-mono tracking-tight text-white my-1">0.0%</div>
+                <div class="text-xs text-gray-400 mt-1">Profit / Item Purchase Cost</div>
+            </div>
+
+            <div class="bg-stCard border border-stBorder rounded-2xl p-5 flex flex-col justify-between shadow-md">
+                <div class="flex justify-between items-center text-xs text-gray-400 mb-2">
+                    <span>PROFIT MARGIN</span>
+                    <i class="fa-solid fa-percent text-gray-500"></i>
+                </div>
+                <div id="marginDisplay" class="text-3xl font-extrabold font-mono tracking-tight text-white my-1">0.0%</div>
+                <div class="text-xs text-gray-400 mt-1">Profit / Pre-tax Revenue</div>
+            </div>
+
+            <div class="bg-stCard border border-stBorder rounded-2xl p-5 flex flex-col justify-between shadow-md">
+                <div class="flex justify-between items-center text-xs text-gray-400 mb-2">
+                    <span>NET EBAY PAYOUT</span>
+                    <i class="fa-solid fa-building-columns text-gray-500"></i>
+                </div>
+                <div id="netPayoutDisplay" class="text-3xl font-extrabold font-mono tracking-tight text-white my-1">$0.00</div>
+                <div id="netPayoutSub" class="text-xs text-gray-400 mt-1">Amount transferred to bank</div>
+            </div>
+        </section>
+
+        <!-- Shipping Rates Reference Legend Card -->
+        <section class="bg-stCard border border-stBorder rounded-2xl p-6 shadow-md">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-stBorder">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-envelope-open-text text-red-400 text-lg"></i>
+                    <h3 class="text-base font-bold text-white">Standard Lettermail Rates Legend (0–30g)</h3>
+                </div>
+                <span class="text-xs text-gray-400">Click a rate to auto-fill Actual Shipping Label Cost</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Letter Within Canada Card -->
+                <div class="bg-stDark border border-stBorder rounded-xl p-4 flex flex-col justify-between hover:border-red-500/50 transition-colors">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-bold text-white flex items-center gap-2">
+                                Letter Within Canada <span class="text-xs font-mono font-normal text-gray-400">(0–30g)</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 text-[11px] font-medium bg-red-950/60 text-red-300 border border-red-800/50 px-2 py-0.5 rounded-md">
+                                <i class="fa-solid fa-envelope text-[10px]"></i> Canada Post
+                            </span>
+                        </div>
+                        <ul class="space-y-1.5 text-xs text-gray-300 font-mono mb-4">
+                            <li class="flex justify-between items-center text-gray-400">
+                                <span>• Base Stamp Price:</span>
+                                <span class="text-white">$1.44</span>
+                            </li>
+                            <li class="flex justify-between items-center text-gray-400">
+                                <span>• Plus Taxes (GST + QST):</span>
+                                <span class="text-white">$0.22</span>
+                            </li>
+                            <li class="flex justify-between items-center text-sm font-bold pt-1.5 border-t border-stBorder/60">
+                                <span class="font-sans text-gray-200">• Total Final Cost:</span>
+                                <span class="text-stGreen font-mono">$1.66</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button type="button" onclick="setShippingCost(1.66)"
+                        class="w-full py-2 px-3 text-xs font-medium text-white bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 rounded-lg transition-all flex items-center justify-center gap-2 group">
+                        <i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center text-red-400 group-hover:scale-110 transition-transform"></i>
+                        Use Domestic Rate ($1.66)
+                    </button>
+                </div>
+
+                <!-- Letter to the USA Card -->
+                <div class="bg-stDark border border-stBorder rounded-xl p-4 flex flex-col justify-between hover:border-blue-500/50 transition-colors">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-bold text-white flex items-center gap-2">
+                                Letter to the USA <span class="text-xs font-mono font-normal text-gray-400">(0–30g)</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 text-[11px] font-medium bg-amber-950/60 text-amber-300 border border-amber-800/50 px-2 py-0.5 rounded-md">
+                                <i class="fa-solid fa-horse text-[10px]"></i> stallion.ca
+                            </span>
+                        </div>
+                        <ul class="space-y-1.5 text-xs text-gray-300 font-mono mb-4">
+                            <li class="flex justify-between items-center text-gray-400">
+                                <span>• Base Stamp Price:</span>
+                                <span class="text-white">$1.75</span>
+                            </li>
+                            <li class="flex justify-between items-center text-gray-400">
+                                <span>• Plus Taxes (GST + QST):</span>
+                                <span class="text-white">$0.26</span>
+                            </li>
+                            <li class="flex justify-between items-center text-sm font-bold pt-1.5 border-t border-stBorder/60">
+                                <span class="font-sans text-gray-200">• Total Final Cost:</span>
+                                <span class="text-stGreen font-mono">$2.01</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <button type="button" onclick="setShippingCost(2.01)"
+                        class="w-full py-2 px-3 text-xs font-medium text-white bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/40 rounded-lg transition-all flex items-center justify-center gap-2 group">
+                        <i class="fa-solid fa-arrow-down-left-and-arrow-up-right-to-center text-blue-400 group-hover:scale-110 transition-transform"></i>
+                        Use USA Rate ($2.01)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Financial Waterfall -->
+        <section class="bg-stCard border border-stBorder rounded-2xl p-6 shadow-md">
+            <h3 class="text-base font-bold text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-red-400"></i> Financial Transaction Waterfall
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-stBorder text-xs text-gray-400 uppercase tracking-wider font-mono">
+                            <th class="py-3 px-4">Line Item</th>
+                            <th class="py-3 px-4 text-right">Calculation Details</th>
+                            <th class="py-3 px-4 text-right">Amount ($ CAD)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stBorder text-sm font-mono">
+                        <tr class="hover:bg-white/5">
+                            <td class="py-3 px-4 font-sans text-gray-200">Item Selling Price</td>
+                            <td class="py-3 px-4 text-right text-gray-400">Buyer payment for item</td>
+                            <td id="tableSellingPrice" class="py-3 px-4 text-right font-medium text-white">$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5">
+                            <td class="py-3 px-4 font-sans text-gray-200">+ Shipping Charged to Buyer</td>
+                            <td class="py-3 px-4 text-right text-gray-400">Buyer payment for shipping</td>
+                            <td id="tableShippingCharged" class="py-3 px-4 text-right font-medium text-white">$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5 text-gray-400">
+                            <td class="py-3 px-4 font-sans">+ Estimated Buyer Sales Tax</td>
+                            <td id="tableSalesTaxCalc" class="py-3 px-4 text-right text-xs text-gray-400">0% of (Item + Shipping)</td>
+                            <td id="tableSalesTaxAmount" class="py-3 px-4 text-right text-gray-400">$0.00</td>
+                        </tr>
+                        <tr class="bg-stDark/50 font-bold border-y border-stBorder">
+                            <td class="py-3 px-4 font-sans text-white">PRE-TAX REVENUE (Seller Base)</td>
+                            <td class="py-3 px-4 text-right text-gray-400 font-normal">Item + Shipping (tax never received)</td>
+                            <td id="tableTotalRevenue" class="py-3 px-4 text-right text-white">$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5 text-red-400">
+                            <td class="py-3 px-4 font-sans">- eBay Percentage Fee</td>
+                            <td id="tableFeePercentCalc" class="py-3 px-4 text-right text-xs text-gray-400">15% of (Item + Ship + Tax)</td>
+                            <td id="tableFeePercentAmount" class="py-3 px-4 text-right">-$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5 text-red-400">
+                            <td class="py-3 px-4 font-sans">- Promoted Listings Ad Fee</td>
+                            <td id="tableAdFeeCalc" class="py-3 px-4 text-right text-xs text-gray-400">0% of (Item + Ship + Tax)</td>
+                            <td id="tableAdFeeAmount" class="py-3 px-4 text-right">-$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5 text-red-400">
+                            <td class="py-3 px-4 font-sans">- eBay Fixed Order Fee</td>
+                            <td class="py-3 px-4 text-right text-xs text-gray-400">Fixed transaction fee</td>
+                            <td id="tableFixedFeeAmount" class="py-3 px-4 text-right">-$0.00</td>
+                        </tr>
+                        <tr class="bg-stDark/50 font-semibold border-y border-stBorder">
+                            <td class="py-3 px-4 font-sans text-gray-200">TOTAL EBAY FEES DEDUCTED</td>
+                            <td class="py-3 px-4 text-right text-gray-400 font-normal">% on (pre-tax + tax) + Ad Rate + Fixed</td>
+                            <td id="tableTotalFees" class="py-3 px-4 text-right text-red-400">-$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5">
+                            <td class="py-3 px-4 font-sans text-blue-400 font-medium">= NET PAYOUT FROM EBAY</td>
+                            <td class="py-3 px-4 text-right text-gray-400">Pre-tax Revenue − eBay Fees</td>
+                            <td id="tableNetPayout" class="py-3 px-4 text-right text-blue-400 font-bold">$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5 text-gray-300">
+                            <td class="py-3 px-4 font-sans">- Out-of-Pocket Item Cost</td>
+                            <td class="py-3 px-4 text-right text-gray-400">Inventory acquisition price</td>
+                            <td id="tableItemCost" class="py-3 px-4 text-right text-gray-300">-$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5 text-gray-300">
+                            <td class="py-3 px-4 font-sans">- Actual Shipping Label Cost</td>
+                            <td class="py-3 px-4 text-right text-gray-400">Canada Post / Carrier expense</td>
+                            <td id="tableLabelCost" class="py-3 px-4 text-right text-gray-300">-$0.00</td>
+                        </tr>
+                        <tr class="hover:bg-white/5 text-gray-300">
+                            <td class="py-3 px-4 font-sans">- Packaging Cost</td>
+                            <td id="tablePackageCalc" class="py-3 px-4 text-right text-gray-400">PWE / Bubble Mailer</td>
+                            <td id="tablePackageCost" class="py-3 px-4 text-right text-gray-300">-$0.00</td>
+                        </tr>
+                        <tr id="tableProfitRow" class="text-base font-bold border-t-2 border-stBorder">
+                            <td class="py-4 px-4 font-sans">= FINAL NET PROFIT / LOSS</td>
+                            <td class="py-4 px-4 text-right font-normal text-xs text-gray-400">Net Payout − Total Out-of-Pocket Costs</td>
+                            <td id="tableFinalProfit" class="py-4 px-4 text-right font-mono">$0.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Insights -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div class="bg-stCard border border-stBorder rounded-2xl p-5 flex flex-col justify-between shadow-md">
+                <div>
+                    <div class="flex items-center gap-2 text-xs font-semibold text-yellow-400 mb-2">
+                        <i class="fa-solid fa-scale-balanced"></i> BREAK-EVEN SELLING PRICE
+                    </div>
+                    <p class="text-xs text-gray-400 mb-3">Target price required to avoid losing money (hitting exactly $0.00 profit).</p>
+                </div>
+                <div class="pt-3 border-t border-stBorder">
+                    <div id="breakEvenPrice" class="text-2xl font-bold font-mono text-white">$0.00</div>
+                    <div class="text-[11px] text-gray-400 mt-1">Assumes current shipping charged, label costs, tax rate & ad rate</div>
+                </div>
+            </div>
+
+            <div class="bg-stCard border border-stBorder rounded-2xl p-5 flex flex-col justify-between shadow-md">
+                <div>
+                    <div class="flex items-center gap-2 text-xs font-semibold text-stGreen mb-2">
+                        <i class="fa-solid fa-bullseye"></i> TARGET FOR 20% MARGIN
+                    </div>
+                    <p class="text-xs text-gray-400 mb-3">Selling price required to net a 20% profit margin on pre-tax revenue.</p>
+                </div>
+                <div class="pt-3 border-t border-stBorder">
+                    <div id="targetPrice20" class="text-2xl font-bold font-mono text-white">$0.00</div>
+                    <div class="text-[11px] text-gray-400 mt-1">Healthy reseller target for wax/singles</div>
+                </div>
+            </div>
+
+            <div class="bg-stCard border border-stBorder rounded-2xl p-5 flex flex-col justify-between shadow-md">
+                <div>
+                    <div class="flex items-center gap-2 text-xs font-semibold text-blue-400 mb-2">
+                        <i class="fa-solid fa-truck-fast"></i> SHIPPING NEUTRALIZER
+                    </div>
+                    <p class="text-xs text-gray-400 mb-3">Charge this shipping fee so eBay's FVF and ad rate don't eat your label budget.</p>
+                </div>
+                <div class="pt-3 border-t border-stBorder">
+                    <div id="shippingNeutralizer" class="text-2xl font-bold font-mono text-white">$0.00</div>
+                    <div class="text-[11px] text-gray-400 mt-1">Label Cost / (1 - Fee % - Ad Rate %)</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="adviceBox" class="p-5 rounded-2xl border flex items-start gap-4 transition-all">
+            <div id="adviceIcon" class="text-2xl p-2 rounded-xl shrink-0"></div>
+            <div>
+                <h4 id="adviceTitle" class="font-bold text-base mb-1">Reseller Strategy Note</h4>
+                <p id="adviceText" class="text-sm text-gray-300 leading-relaxed"></p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const inputs = {
+            itemCost: document.getElementById('itemCost'),
+            sellingPrice: document.getElementById('sellingPrice'),
+            shippingCharged: document.getElementById('shippingCharged'),
+            actualShipping: document.getElementById('actualShipping'),
+            packageType: document.getElementById('packageType'),
+            salesTaxPercent: document.getElementById('salesTaxPercent'),
+            feePercent: document.getElementById('feePercent'),
+            adRatePercent: document.getElementById('adRatePercent'),
+            fixedFee: document.getElementById('fixedFee')
+        };
+
+        const outputs = {
+            netProfitDisplay: document.getElementById('netProfitDisplay'),
+            netProfitSub: document.getElementById('netProfitSub'),
+            roiDisplay: document.getElementById('roiDisplay'),
+            marginDisplay: document.getElementById('marginDisplay'),
+            netPayoutDisplay: document.getElementById('netPayoutDisplay'),
+            netPayoutSub: document.getElementById('netPayoutSub'),
+            statusBadge: document.getElementById('statusBadge'),
+            statusIcon: document.getElementById('statusIcon'),
+            statusText: document.getElementById('statusText'),
+            tableSellingPrice: document.getElementById('tableSellingPrice'),
+            tableShippingCharged: document.getElementById('tableShippingCharged'),
+            tableSalesTaxCalc: document.getElementById('tableSalesTaxCalc'),
+            tableSalesTaxAmount: document.getElementById('tableSalesTaxAmount'),
+            tableTotalRevenue: document.getElementById('tableTotalRevenue'),
+            tableFeePercentCalc: document.getElementById('tableFeePercentCalc'),
+            tableFeePercentAmount: document.getElementById('tableFeePercentAmount'),
+            tableAdFeeCalc: document.getElementById('tableAdFeeCalc'),
+            tableAdFeeAmount: document.getElementById('tableAdFeeAmount'),
+            tableFixedFeeAmount: document.getElementById('tableFixedFeeAmount'),
+            tableTotalFees: document.getElementById('tableTotalFees'),
+            tableNetPayout: document.getElementById('tableNetPayout'),
+            tableItemCost: document.getElementById('tableItemCost'),
+            tableLabelCost: document.getElementById('tableLabelCost'),
+            tablePackageCalc: document.getElementById('tablePackageCalc'),
+            tablePackageCost: document.getElementById('tablePackageCost'),
+            tableProfitRow: document.getElementById('tableProfitRow'),
+            tableFinalProfit: document.getElementById('tableFinalProfit'),
+            breakEvenPrice: document.getElementById('breakEvenPrice'),
+            targetPrice20: document.getElementById('targetPrice20'),
+            shippingNeutralizer: document.getElementById('shippingNeutralizer'),
+            adviceBox: document.getElementById('adviceBox'),
+            adviceIcon: document.getElementById('adviceIcon'),
+            adviceTitle: document.getElementById('adviceTitle'),
+            adviceText: document.getElementById('adviceText')
+        };
+
+        function formatCurrency(val) {
+            const num = Number(val) || 0;
+            return (num < 0 ? '-$' : '$') + Math.abs(num).toFixed(2);
+        }
+
+        function setShippingCost(val) {
+            inputs.actualShipping.value = val.toFixed(2);
+            calculate();
+            inputs.actualShipping.classList.add('ring-2', 'ring-red-500');
+            setTimeout(() => {
+                inputs.actualShipping.classList.remove('ring-2', 'ring-red-500');
+            }, 600);
+        }
+
+        function calculate() {
+            const itemCost = Math.max(0, parseFloat(inputs.itemCost.value) || 0);
+            const sellingPrice = Math.max(0, parseFloat(inputs.sellingPrice.value) || 0);
+            const shippingCharged = Math.max(0, parseFloat(inputs.shippingCharged.value) || 0);
+            const actualShipping = Math.max(0, parseFloat(inputs.actualShipping.value) || 0);
+            const packageCost = Math.max(0, parseFloat(inputs.packageType.value) || 0);
+            const salesTaxPercent = Math.max(0, parseFloat(inputs.salesTaxPercent.value) || 0) / 100;
+            const feePercent = Math.max(0, parseFloat(inputs.feePercent.value) || 0) / 100;
+            const adRatePercent = Math.max(0, parseFloat(inputs.adRatePercent.value) || 0) / 100;
+            const fixedFee = Math.max(0, parseFloat(inputs.fixedFee.value) || 0);
+
+            // Package type label for display
+            let packageLabel = 'None';
+            if (packageCost === 0.066) packageLabel = 'PWE (Plain White Envelope)';
+            else if (packageCost === 0.67) packageLabel = 'Bubble Mailer';
+
+            // eBay rules:
+            // - Sales tax is collected by eBay and remitted (seller never receives it)
+            // - Final Value Fee AND Promoted Listings Standard ad rate ARE charged on tax
+            // - Fee base = Item + Shipping + Tax
+            // - Net payout starts from (Item + Shipping) only
+            const totalRevenue = sellingPrice + shippingCharged;
+            const salesTaxAmount = totalRevenue * salesTaxPercent;
+            const feeBase = totalRevenue + salesTaxAmount;
+            const percentageFeeAmount = feeBase * feePercent;
+            const adFeeAmount = feeBase * adRatePercent;
+            const totalEbayFees = percentageFeeAmount + adFeeAmount + fixedFee;
+            const netPayout = totalRevenue - totalEbayFees;
+            const totalOutofPocket = itemCost + actualShipping + packageCost;
+            const netProfit = netPayout - totalOutofPocket;
+
+            const roi = itemCost > 0 ? (netProfit / itemCost) * 100 : 0;
+            const margin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+
+            // Break-even (accounts for fee + ad rate on tax)
+            let breakEven = 0;
+            const effectiveKeepRate = 1 - (feePercent + adRatePercent) * (1 + salesTaxPercent);
+            if (effectiveKeepRate > 0) {
+                breakEven = (itemCost + actualShipping + packageCost + fixedFee) / effectiveKeepRate - shippingCharged;
+                breakEven = Math.max(0, breakEven);
+            }
+
+            // Target for 20% margin on pre-tax revenue
+            let targetPriceFor20 = 0;
+            const targetMargin = 0.20;
+            const keepFor20 = 1 - (feePercent + adRatePercent) * (1 + salesTaxPercent) - targetMargin;
+            if (keepFor20 > 0) {
+                const requiredTotalRev = (totalOutofPocket + fixedFee) / keepFor20;
+                targetPriceFor20 = Math.max(0, requiredTotalRev - shippingCharged);
+            }
+
+            let neutralShipping = 0;
+            if (1 - feePercent - adRatePercent > 0) {
+                neutralShipping = actualShipping / (1 - feePercent - adRatePercent);
+            }
+
+            const adNote = adRatePercent > 0
+                ? ` Promoted Listings is also taking ${(adRatePercent * 100).toFixed(1)}% of the tax-inclusive total.`
+                : '';
+
+            // Render metrics
+            outputs.netProfitDisplay.textContent = formatCurrency(netProfit);
+            outputs.roiDisplay.textContent = roi.toFixed(1) + '%';
+            outputs.marginDisplay.textContent = margin.toFixed(1) + '%';
+            outputs.netPayoutDisplay.textContent = formatCurrency(netPayout);
+            outputs.netPayoutSub.textContent = adFeeAmount > 0
+                ? 'Bank transfer after ' + formatCurrency(adFeeAmount) + ' ad fee'
+                : 'Amount transferred to bank';
+
+            if (netProfit > 0) {
+                outputs.netProfitDisplay.className = "text-3xl font-extrabold font-mono tracking-tight text-stGreen my-1";
+                outputs.netProfitSub.innerHTML = `<i class="fa-solid fa-arrow-trend-up text-stGreen"></i> <span class="text-stGreen">+$${netProfit.toFixed(2)} Profit</span>`;
+                outputs.statusBadge.className = "px-4 py-2.5 rounded-xl border flex items-center gap-3 font-semibold text-sm bg-stGreen/10 border-stGreen/30 text-stGreen shadow-lg";
+                outputs.statusIcon.className = "fa-solid fa-circle-check text-base";
+                outputs.statusText.textContent = "Profitable Deal";
+                outputs.adviceBox.className = "p-5 rounded-2xl border border-stGreen/30 bg-stGreen/5 flex items-start gap-4 transition-all";
+                outputs.adviceIcon.className = "fa-solid fa-circle-dollar-to-slot text-2xl text-stGreen p-2 rounded-xl shrink-0";
+                outputs.adviceTitle.textContent = "Solid Margin Deal";
+                outputs.adviceTitle.className = "font-bold text-base mb-1 text-stGreen";
+                outputs.adviceText.textContent = `You are turning a net profit of ${formatCurrency(netProfit)} (${roi.toFixed(1)}% ROI). eBay is charging fees on the sales tax portion too, but you still have a healthy cushion.${adNote}`;
+            } else if (netProfit === 0) {
+                outputs.netProfitDisplay.className = "text-3xl font-extrabold font-mono tracking-tight text-yellow-400 my-1";
+                outputs.netProfitSub.innerHTML = `<span class="text-yellow-400">Break-even ($0.00)</span>`;
+                outputs.statusBadge.className = "px-4 py-2.5 rounded-xl border flex items-center gap-3 font-semibold text-sm bg-yellow-500/10 border-yellow-500/30 text-yellow-400 shadow-lg";
+                outputs.statusIcon.className = "fa-solid fa-scale-balanced text-base";
+                outputs.statusText.textContent = "Break-Even Deal";
+                outputs.adviceBox.className = "p-5 rounded-2xl border border-yellow-500/30 bg-yellow-500/5 flex items-start gap-4 transition-all";
+                outputs.adviceIcon.className = "fa-solid fa-scale-balanced text-2xl text-yellow-400 p-2 rounded-xl shrink-0";
+                outputs.adviceTitle.textContent = "Zero Net Margin";
+                outputs.adviceTitle.className = "font-bold text-base mb-1 text-yellow-400";
+                outputs.adviceText.textContent = `You are breaking even exactly. Raising the selling price or lowering shipping costs is needed to create real profit (remember eBay also fees the tax).${adNote}`;
+            } else {
+                outputs.netProfitDisplay.className = "text-3xl font-extrabold font-mono tracking-tight text-stRed my-1";
+                outputs.netProfitSub.innerHTML = `<i class="fa-solid fa-arrow-trend-down text-stRed"></i> <span class="text-stRed">-$${Math.abs(netProfit).toFixed(2)} Loss</span>`;
+                outputs.statusBadge.className = "px-4 py-2.5 rounded-xl border flex items-center gap-3 font-semibold text-sm bg-stRed/10 border-stRed/30 text-stRed shadow-lg";
+                outputs.statusIcon.className = "fa-solid fa-triangle-exclamation text-base";
+                outputs.statusText.textContent = "Unprofitable Deal";
+                outputs.adviceBox.className = "p-5 rounded-2xl border border-stRed/30 bg-stRed/5 flex items-start gap-4 transition-all";
+                outputs.adviceIcon.className = "fa-solid fa-triangle-exclamation text-2xl text-stRed p-2 rounded-xl shrink-0";
+                outputs.adviceTitle.textContent = "Thin Margin / Loss Trap";
+                outputs.adviceTitle.className = "font-bold text-base mb-1 text-stRed";
+                const adClause = adRatePercent > 0
+                    ? ` plus ${(adRatePercent * 100).toFixed(1)}% ad rate`
+                    : '';
+                outputs.adviceText.textContent = `You are losing ${formatCurrency(Math.abs(netProfit))} on this transaction. eBay takes ${(feePercent * 100).toFixed(1)}% final value fee${adClause} of the total (including sales tax). Raise the price to at least ${formatCurrency(breakEven)} to break even.`;
+            }
+
+            // Table
+            outputs.tableSellingPrice.textContent = formatCurrency(sellingPrice);
+            outputs.tableShippingCharged.textContent = formatCurrency(shippingCharged);
+            outputs.tableSalesTaxCalc.textContent = `${(salesTaxPercent * 100).toFixed(1)}% of (Item + Shipping)`;
+            outputs.tableSalesTaxAmount.textContent = formatCurrency(salesTaxAmount);
+            outputs.tableTotalRevenue.textContent = formatCurrency(totalRevenue);
+            outputs.tableFeePercentCalc.textContent = `${(feePercent * 100).toFixed(1)}% of ${formatCurrency(feeBase)} (incl. tax)`;
+            outputs.tableFeePercentAmount.textContent = '-' + formatCurrency(percentageFeeAmount);
+            outputs.tableAdFeeCalc.textContent = `${(adRatePercent * 100).toFixed(1)}% of ${formatCurrency(feeBase)} (incl. tax)`;
+            outputs.tableAdFeeAmount.textContent = '-' + formatCurrency(adFeeAmount);
+            outputs.tableFixedFeeAmount.textContent = '-' + formatCurrency(fixedFee);
+            outputs.tableTotalFees.textContent = '-' + formatCurrency(totalEbayFees);
+            outputs.tableNetPayout.textContent = formatCurrency(netPayout);
+            outputs.tableItemCost.textContent = '-' + formatCurrency(itemCost);
+            outputs.tableLabelCost.textContent = '-' + formatCurrency(actualShipping);
+            outputs.tablePackageCalc.textContent = packageLabel;
+            outputs.tablePackageCost.textContent = '-' + formatCurrency(packageCost);
+            outputs.tableFinalProfit.textContent = formatCurrency(netProfit);
+            outputs.tableProfitRow.className = netProfit >= 0
+                ? "text-base font-bold border-t-2 border-stBorder text-stGreen"
+                : "text-base font-bold border-t-2 border-stBorder text-stRed";
+
+            outputs.breakEvenPrice.textContent = formatCurrency(breakEven);
+            outputs.targetPrice20.textContent = formatCurrency(targetPriceFor20);
+            outputs.shippingNeutralizer.textContent = formatCurrency(neutralShipping);
+        }
+
+        function loadBoxExample() {
+            inputs.itemCost.value = "80.00";
+            inputs.sellingPrice.value = "95.00";
+            inputs.shippingCharged.value = "22.00";
+            inputs.actualShipping.value = "22.00";
+            inputs.packageType.value = "0";
+            inputs.salesTaxPercent.value = "0.00";
+            inputs.feePercent.value = "15.00";
+            inputs.adRatePercent.value = "0.00";
+            inputs.fixedFee.value = "0.40";
+            calculate();
+        }
+
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', calculate);
+            input.addEventListener('change', calculate);
+            input.addEventListener('keyup', calculate);
+        });
+
+        document.addEventListener('DOMContentLoaded', calculate);
+    </script>
+</body>
+</html>
