@@ -74,9 +74,13 @@
             <div>
                 <label class="block text-xs font-medium text-gray-300 mb-1.5" for="sellingPrice">Target Selling Price ($ CAD)</label>
                 <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 text-sm">$</span>
-                    <input type="number" id="sellingPrice" value="2" step="0.01" min="0"
-                        class="w-full pl-7 pr-3 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors">
+                    <select id="sellingPrice"
+                        class="w-full pl-3 pr-8 py-2 bg-stDark border border-stBorder rounded-lg text-white font-mono text-sm focus:outline-none focus:border-red-500 transition-colors appearance-none cursor-pointer">
+                        <!-- Options generated dynamically from $1.00 to $100.00 with $0.05 increments -->
+                    </select>
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 pointer-events-none">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </span>
                 </div>
             </div>
 
@@ -490,6 +494,22 @@
             adviceText: document.getElementById('adviceText')
         };
 
+        // Populate selling price dropdown from $1.00 to $100.00 with $0.05 increments
+        function initSellingPriceDropdown() {
+            const select = inputs.sellingPrice;
+            select.innerHTML = '';
+            for (let i = 1.00; i <= 100.00; i += 0.05) {
+                const valStr = i.toFixed(2);
+                const option = document.createElement('option');
+                option.value = valStr;
+                option.textContent = '$' + valStr;
+                if (Math.abs(i - 2.00) < 0.001) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            }
+        }
+
         function formatCurrency(val) {
             const num = Number(val) || 0;
             return (num < 0 ? '-$' : '$') + Math.abs(num).toFixed(2);
@@ -640,7 +660,7 @@
 
         function loadBoxExample() {
             inputs.itemCost.value = "";
-            inputs.sellingPrice.value = "";
+            inputs.sellingPrice.value = "2.00";
             inputs.shippingCharged.value = "2.00";
             inputs.actualShipping.value = "2.01";
             inputs.packageType.value = "0";
@@ -657,7 +677,10 @@
             input.addEventListener('keyup', calculate);
         });
 
-        document.addEventListener('DOMContentLoaded', calculate);
+        document.addEventListener('DOMContentLoaded', () => {
+            initSellingPriceDropdown();
+            calculate();
+        });
     </script>
 </body>
 </html>
